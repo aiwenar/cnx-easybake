@@ -104,7 +104,8 @@ class RulesetTestCase(unittest.TestCase):
         """Create a specific ruleset test."""
         @mock.patch('cnxeasybake.oven.uuid4', uuids.next)
         def run_test(self):
-            element = etree.HTML(html)
+            xml_parser = etree.XMLParser(ns_clean=True, recover=True)
+            element = etree.HTML(html, xml_parser)
             oven = Oven(css)
             oven.bake(element)
             output = tidy(etree.tostring(element, method='html'))
