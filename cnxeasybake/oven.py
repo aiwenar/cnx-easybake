@@ -1,7 +1,13 @@
 #!/usr/bin/env python
 """Implement a collator that moves content defined by CSS3 rules to HTML."""
 import logging
-from lxml import etree
+# from lxml import etree
+# Force python XML parser not faster C accelerators
+# because we can't hook the C implementation
+import sys
+sys.modules['_elementtree'] = None
+import xml.etree as etree
+
 import tinycss2
 from tinycss2 import serialize, parse_declaration_list, ast
 import cssselect2
@@ -275,8 +281,12 @@ class Oven():
                         logger.warning(u'Missing action {}'.format(
                             action).encode('utf-8'))
                 except Exception as e:
-                    logger.error(u'Exception on CSS line {}'.format(
-                            decl.source_line).encode('utf-8'))
+                    print(element.getroot())
+                    print(decl.source_line)
+                    print(element.getroot()._start_line_number)
+                    print(element.getroot()._start_column_number)
+                    logger.error(u'Exception on CSS line {} from HTML line {}:{}'.format(
+                            decl.source_line, element.getroot()._start_line_number, element.getroot()._start_column_number).encode('utf-8'))
                     raise e
 
         # Do numbering
@@ -472,7 +482,7 @@ class Oven():
     def push_pending_elem(self, element, pseudo, decl):
         """Create and place pending target element onto stack."""
         self.push_target_elem(element, pseudo, decl)
-        elem = etree.Element('div')
+        elem = etree.ElementTree.Element('div')
         actions = self.state[self.state['current_step']]['actions']
         actions.append(('move', elem, decl))
         actions.append(('target', Target(elem), decl))
@@ -1084,7 +1094,7 @@ class Oven():
                 wastebin.append(('move', elem, decl))
 
         if len(wastebin) > 0:
-            trashbucket = etree.Element('div',
+            trashbucket = etree.ElementTree.Element('div',
                                         attrib={'class': 'delete-me'})
             if actions[-1][0] == 'target':
                 actions.pop()
@@ -1194,10 +1204,11 @@ def css_to_func(css, flags=None):
             if sel.pseudo_element == 'first-letter':
                 first_letter = True
 
-    xp = etree.XPath(xpath)
+    # xp = etree.XPath(xpath)
 
     def func(elem):
-        res = xp(elem)
+        print(xpath)
+        res = elem.findall(xpath)
         if res:
             if etree.iselement(res[0]):
                 res_str = etree.tostring(res[0], encoding='unicode',
@@ -1325,8 +1336,8 @@ def insert_group(node, target, group):
 
 def create_group(value):
     """Create the group wrapper node."""
-    node = etree.Element('div', attrib={'class': 'group-by'})
-    span = etree.Element('span', attrib={'class': 'group-label'})
+    node = etree.ElementTree.Element('div', attrib={'class': 'group-by'})
+    span = etree.ElementTree.Element('span', attrib={'class': 'group-label'})
     span.text = value
     node.append(span)
     return node
@@ -1403,6 +1414,13 @@ def _to_roman(num):
 def copy_w_id_suffix(elem, suffix="_copy"):
     """Make a deep copy of the provided tree, altering ids."""
     mycopy = deepcopy(elem)
-    for id_elem in mycopy.xpath('//*[@id]'):
-        id_elem.set('id', id_elem.get('id') + suffix)
+
+    # Xpath is not supported for non-lxml Element objects
+    replace_ids(mycopy, suffix)
     return mycopy
+
+def replace_ids(elem, suffix):
+    if elem.get('id'):
+        elem.set('id', elem.get('id') + suffix)
+    for child in list(elem):
+        replace_ids(child, suffix)

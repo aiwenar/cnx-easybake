@@ -2,26 +2,67 @@
 """Use baker from command line."""
 from __future__ import print_function
 
+import StringIO
 import argparse
 import logging
 import sys
-from lxml import etree
-
+from lxml import etree as lxmletree
 from cnxeasybake import Oven, __version__
 
+# Force python XML parser not faster C accelerators
+# because we can't hook the C implementation
+sys.modules['_elementtree'] = None
+import xml.etree as etree
+import xml.etree.ElementTree
+
+
 logger = logging.getLogger('cnx-easybake')
+
+
+class LineNumberingParser(etree.ElementTree.XMLParser):
+    """ Record the line and column numbers for elements
+
+    (to create better error messages)
+    TODO: also record line/column information for attribute names,
+          values, and text nodes because they can come from different places
+          (different XML files, CSS recipe files)
+    """
+    def _start_list(self, *args, **kwargs):
+        # Here we assume the default XML parser which is expat
+        # and copy its element position attributes into output Elements
+        element = super(self.__class__, self)._start_list(*args, **kwargs)
+        print(element)
+        element._start_line_number = self.parser.CurrentLineNumber
+        element._start_column_number = self.parser.CurrentColumnNumber
+        element._start_byte_index = self.parser.CurrentByteIndex
+        return element
+
+    def _end(self, *args, **kwargs):
+        element = super(self.__class__, self)._end(*args, **kwargs)
+        element._end_line_number = self.parser.CurrentLineNumber
+        element._end_column_number = self.parser.CurrentColumnNumber
+        element._end_byte_index = self.parser.CurrentByteIndex
+        return element
 
 
 def easybake(css_in, html_in=sys.stdin, html_out=sys.stdout, last_step=None,
              coverage_file=None, use_repeatable_ids=False):
     """Process the given HTML file stream with the css stream."""
-    html_parser = etree.HTMLParser(encoding="utf-8")
-    html_doc = etree.HTML(html_in.read(), html_parser)
+
+    # Parse in the HTML and then temporarily output XML so it can be
+    # parsed by the LineNumberingParser.
+    html_parser = lxmletree.HTMLParser(encoding="utf-8")
+    html_doc = lxmletree.HTML(html_in.read(), html_parser)
+
+    xml = lxmletree.tostring(html_doc, method="xml")
+    xml_parser = LineNumberingParser(encoding="utf-8")
+    xml_doc = etree.ElementTree.parse(StringIO.StringIO(xml), xml_parser)
+
     oven = Oven(css_in, use_repeatable_ids)
-    oven.bake(html_doc, last_step)
+    oven.bake(xml_doc, last_step)
 
     # serialize out HTML
-    print (etree.tostring(html_doc, method="html"), file=html_out)
+    print (etree.tostring(xml_doc, method="html"), file=html_out)
 
     # generate CSS coverage_file file
     if coverage_file:
