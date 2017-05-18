@@ -1226,19 +1226,17 @@ def css_to_func(css, flags=None):
                                          method="text")
             else:
                 res_str = res[0]
+
+            if not flags or 'nostrip' not in flags:
+                res_str = res_str.strip()
+
             if first_letter:
-                if res_str:
-                    if flags and 'nocase' in flags:
-                        return res_str[0].upper()
-                    else:
-                        return res_str[0]
-                else:
-                    return res_str
+                res_str = res_str[0]
+
+            if flags and 'nocase' in flags:
+                return res_str.upper()
             else:
-                if flags and 'nocase' in flags:
-                    return res_str.upper()
-                else:
-                    return res_str
+                return res_str
 
     return func
 
