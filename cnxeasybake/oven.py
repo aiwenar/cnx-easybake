@@ -685,6 +685,17 @@ class Oven():
                     vtype = term.name[7:]+'s'
                     vals.append(TargetVal(self, vref[1:], vname, vtype))
 
+                elif term.name == u'strip':
+                    tmpstr = self.eval_string_value(element, term.arguments)
+                    if tmpstr:
+                        if isinstance(tmpstr[0], basestring):
+                            strval += tmpstr[0].strip()
+                        else:
+                            logger.warning(u"Bad string value:"
+                                           u" nested target-* not allowed. "
+                                           u"{}".format(
+                                               serialize(value)).encode(
+                                                   'utf-8'))
                 elif term.name == u'first-letter':
                     tmpstr = self.eval_string_value(element, term.arguments)
                     if tmpstr:
@@ -1119,14 +1130,14 @@ class Oven():
         """Implement group-by declaration - pre-match."""
         sort_css = groupby_css = flags = ''
         if ',' in decl.value:
-            if decl.value.count(',') == 2:
+            if decl.value.count(',') >= 2:
                 sort_css, groupby_css, flags = \
-                        map(serialize, split(decl.value, ','))
+                        map(serialize, split(decl.value, ',', 2))
             else:
                 sort_css, groupby_css = map(serialize, split(decl.value, ','))
         else:
             sort_css = serialize(decl.value)
-        if groupby_css.strip() == 'nocase':
+        if groupby_css.strip() in ('nocase','strip'):
             flags = groupby_css
             groupby_css = ''
         sort = css_to_func(sort_css, flags)
@@ -1227,7 +1238,7 @@ def css_to_func(css, flags=None):
             else:
                 res_str = res[0]
 
-            if not flags or 'nostrip' not in flags:
+            if flags and 'strip' in flags:
                 res_str = res_str.strip()
 
             if first_letter:

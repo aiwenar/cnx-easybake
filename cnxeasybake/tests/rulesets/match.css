@@ -2,10 +2,10 @@
 div[data-type="page"] > div[data-type="document-title"] {
   string-set: section-title content();
 }
-div[data-type="page"] span[data-type="term"]:match(^[a-zA-Z]) {
-  attr-group-by: first-letter(content());
+div[data-type="page"] span[data-type="term"]:match(^ *[a-zA-Z]) {
+  attr-group-by: first-letter(strip(content()));
 }
-div[data-type="page"] span[data-type="term"]:match(^[^a-zA-Z]) {
+div[data-type="page"] span[data-type="term"]:match(^ *[^ a-zA-Z]) {
   attr-group-by: "";
 }
 div[data-type="page"] span[data-type="term"]:pass(2)::after {
@@ -28,9 +28,15 @@ div[data-type="page"] span[data-type="term"]:pass(2)::after {
 }
 body:pass(2)::after {
   class: glossary;
+  content: nodes(eob-glossary);
+  sort-by: span;
+}
+body:pass(2)::after {
+  class: glossary;
   content: pending(eob-glossary);
-  group-by: span, "span::attr(group-by)", nocase;
+  group-by: span, "span::attr(group-by)", nocase, strip;
 }
 body > div.glossary > div.group-by:first-of-type > span.group-label:pass(3) {
   content: "Symbol";
 }
+
