@@ -1137,7 +1137,7 @@ class Oven():
                 sort_css, groupby_css = map(serialize, split(decl.value, ','))
         else:
             sort_css = serialize(decl.value)
-        if groupby_css.strip() in ('nocase','strip'):
+        if groupby_css.strip() in ('nocase', 'strip'):
             flags = groupby_css
             groupby_css = ''
         sort = css_to_func(sort_css, flags)
@@ -1190,20 +1190,22 @@ class Oven():
                        u"{}".format(decl.value).encpde('utf-8'))
 
 
-def _itersplit(li, splitters):
+def _itersplit(li, splitters, limit=None):
     current = []
+    _seen = 0
     for item in li:
-        if item in splitters:
+        if (item in splitters and (limit is None or _seen < limit)):
             yield current
             current = []
+            _seen += 1
         else:
             current.append(item)
     yield current
 
 
-def split(li, *splitters):
+def split(li, splitters, limit=None):
     """Split a list."""
-    return [subl for subl in _itersplit(li, splitters) if subl]
+    return [subl for subl in _itersplit(li, splitters, limit) if subl]
 
 
 def css_to_func(css, flags=None):
