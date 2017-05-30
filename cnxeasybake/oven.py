@@ -1194,7 +1194,9 @@ def _itersplit(li, splitters, limit=None):
     current = []
     _seen = 0
     for item in li:
-        if (item in splitters and (limit is None or _seen < limit)):
+        if (hasattr(item, 'value') and
+                item.value in splitters and
+                (limit is None or _seen < limit)):
             yield current
             current = []
             _seen += 1
