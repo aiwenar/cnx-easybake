@@ -3,7 +3,7 @@
 import logging
 from logging import WARN, ERROR, INFO, DEBUG
 import sys
-
+import os
 from lxml import etree
 import tinycss2
 from tinycss2 import serialize, parse_declaration_list, ast
@@ -14,6 +14,7 @@ from cssselect2.compiler import CompiledSelector
 from cssselect2.extensions import extensions
 from copy import deepcopy
 from icu import Locale, Collator, UnicodeString
+from urlparse import urljoin
 from uuid import uuid4
 
 verbose = False
@@ -184,12 +185,16 @@ class Oven():
 
         if css_in is None:
             return
+        base = ''
         try:
             with open(css_in, 'rb') as f:  # is it a path/filename?
                 css = f.read()
+            base = os.path.dirname(css_in)
         except (IOError, TypeError):
             try:
                 css = css_in.read()  # Perhaps a file obj?
+                if hasattr(css_in, 'name'):
+                    base = os.path.dirname(css_in.name) + '/'
             except AttributeError:
                 css = css_in         # Treat it as a string
 
@@ -228,6 +233,7 @@ class Oven():
                             .encode('utf-8'))
 
             elif rule.type == 'qualified-rule':
+                resolve_urls(rule.content, base)
 
                 selectors = parse(rule.prelude, namespaces=self.css_namespaces,
                                   extensions=extensions)
@@ -339,6 +345,8 @@ class Oven():
                         append_string(target, old_content['text'])
                         for child in old_content['children']:
                             target.tree.append(child)
+                elif action == 'replace':
+                    target.tree.getparent().replace(target.tree, value)
                 elif action == 'attrib':
                     attname, vals = value
                     strval = u''.join([u'{}'.format(s) for s in vals])
@@ -1123,6 +1131,9 @@ class Oven():
             elif type(term) is ast.LiteralToken:
                 actions.append(('string', term.value))
 
+            elif type(term) is ast.URLToken:
+                actions.append(('replace', etree.parse(term.value).getroot()))
+
             elif type(term) is ast.FunctionBlock:
                 if term.name == 'string':
                     str_args = split(term.arguments, ',')
@@ -1601,3 +1612,10 @@ def copy_w_id_suffix(elem, suffix="_copy"):
     for id_elem in mycopy.xpath('//*[@id]'):
         id_elem.set('id', id_elem.get('id') + suffix)
     return mycopy
+
+
+def resolve_urls(nodes, base):
+    """Resolve relative URLs"""
+    for node in nodes:
+        if isinstance(node, ast.URLToken):
+            node.value = urljoin(base, node.value)
