@@ -5,7 +5,10 @@ import os
 import subprocess
 import unittest
 import logging
-import mock
+try:
+    import mock
+except ImportError:
+    import unittest.mock as mock
 from testfixtures import LogCapture
 
 from lxml import etree
@@ -73,7 +76,7 @@ class RulesetTestCase(unittest.TestCase):
             desc = None
             with open('{}.css'.format(filename_no_ext), 'rb') as f_css:
                 for line in f_css:
-                    if line.startswith('/* '):
+                    if line.startswith(b'/* '):
                         header.append(line[3:-3])
                 f_css.seek(0)
 
@@ -103,7 +106,7 @@ class RulesetTestCase(unittest.TestCase):
     @classmethod
     def create_test(cls, css, html, baked_html, desc, logs):
         """Create a specific ruleset test."""
-        @mock.patch('cnxeasybake.oven.uuid4', uuids.next)
+        @mock.patch('cnxeasybake.oven.uuid4', lambda: next(uuids))
         def run_test(self):
             element = etree.XML(html)
             oven = Oven(css)

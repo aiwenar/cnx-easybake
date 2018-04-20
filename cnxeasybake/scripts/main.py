@@ -48,10 +48,10 @@ def main(argv=None):
     parser.add_argument('-v', '--version', action="version",
                         version=__version__, help='Report the library version')
     parser.add_argument("css_rules",
-                        type=argparse.FileType('r'),
+                        type=argparse.FileType('rb'),
                         help="CSS3 ruleset stylesheet recipe")
     parser.add_argument("html_in", nargs="?",
-                        type=argparse.FileType('r'),
+                        type=argparse.FileType('rb'),
                         help="raw HTML file to bake (default stdin)",
                         default=sys.stdin)
     parser.add_argument("html_out", nargs="?",

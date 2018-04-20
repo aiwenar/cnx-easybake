@@ -4,7 +4,9 @@ import unittest
 import os
 import tempfile
 from contextlib import contextmanager
-from StringIO import StringIO
+# Python 2 and 3:
+from io import BytesIO     # for handling byte strings
+from io import StringIO    # for handling unicode strings
 
 
 @contextmanager
@@ -22,9 +24,9 @@ HTML = '''<html xmlns="http://www.w3.org/1999/xhtml"><head><title>example</title
 </body></html>
 '''
 
-CSS = 'div { copy-to: end-of-chapter;}'
+CSS = u'div { copy-to: end-of-chapter;}'
 
-BAD_CSS = 'not a selector {}'
+BAD_CSS = u'not a selector {}'
 
 CSS_TWO_STEP = '''div[data-type="copy-me"] { step: 1; copy-to: "end-of-chapter" }
 div[data-type="book"]::after { step: 1; content: pending("end-of-chapter")}
@@ -34,7 +36,7 @@ div[data-type="book"]::after {step: 5; content: "Here is a later step" }
 HTML_ONE_STEP = '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>example</title></head>\n<body>\n  <div data-type="book">\n    <div data-type="copy-me">Here is something to copy</div>\n  <div><div data-type="copy-me">Here is something to copy</div></div></div>\n</body></html>'
 
 
-HTML_TWO_STEP = '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>example</title></head>\n<body>\n  <div data-type="book">\n    <div data-type="copy-me">Here is something to copy</div>\n  <div><div data-type="copy-me">Here is something to copy</div></div><div>Here is a later step</div></div>\n</body></html>'
+HTML_TWO_STEP = u'<html xmlns="http://www.w3.org/1999/xhtml"><head><title>example</title></head>\n<body>\n  <div data-type="book">\n    <div data-type="copy-me">Here is something to copy</div>\n  <div><div data-type="copy-me">Here is something to copy</div></div><div>Here is a later step</div></div>\n</body></html>'
 
 
 class OvenCssTest(unittest.TestCase):

@@ -2,6 +2,7 @@
 """Implement a collator that moves content defined by CSS3 rules to HTML."""
 import logging
 from lxml import etree
+from io import open
 import tinycss2
 from tinycss2 import serialize, parse_declaration_list, ast
 import cssselect2
@@ -149,7 +150,7 @@ class Oven():
         if css_in is None:
             return
         try:
-            with open(css_in) as f:  # is it a path/filename?
+            with open(css_in, 'rb') as f:  # is it a path/filename?
                 css = f.read()
         except (IOError, TypeError):
             try:
