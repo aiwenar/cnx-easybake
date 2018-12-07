@@ -2,6 +2,11 @@
 Change Log
 ==========
 
+1.2.0
+-----
+
+- make commandline easybake properly encode output
+
 1.1.0
 -----
 
